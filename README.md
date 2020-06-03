@@ -9,3 +9,6 @@ It does its job
 * Verify if they are "big" accounts (need to beat some threshold of followers)
 or if they are verified
 * The ids that match one or more of the last 3 points are excluded. The remain will be unfollowed
+
+
+The multiples "types" of id's were saved on files to prevent, when testing, API sleep (10-15 minutes)

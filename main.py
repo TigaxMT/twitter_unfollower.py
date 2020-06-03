@@ -30,7 +30,7 @@ big_accounts_file = "big_accounts.txt"
 account_name = "YOUR_ACCOUNT_NAME"
 
 # Threshold to verify if an account has the right ammount of followers
-# to classify as "Big Account"
+# to be classified as "Big Account"
 threshold_followers = 5000
 
 # Since date until some date (in this case 30 days)
@@ -53,9 +53,9 @@ def thread_jobs(job, *args):
 	return res.result()
 
 def read_write_ids(filename, mode, ids=None):
-	""" Function that writes a list of ids on a file"""
+	""" I/O funcction that writes id list to a file and read from it"""
 
-	# Verify if the file already exist, if not write to it and save
+	# Write id list on a file
 	if mode == "w":
 
 		# Save the ids on a file 
@@ -63,7 +63,7 @@ def read_write_ids(filename, mode, ids=None):
 			for idt in ids:
 				f.write("%s\n" % str(idt))
 
-	# File exists, so read it
+	# Read id file to an list
 	else:
 		with open(filename, "rb") as f:
 			ids = f.readlines()
