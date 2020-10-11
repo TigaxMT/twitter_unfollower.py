@@ -3,6 +3,7 @@ import sys
 import os
 import concurrent.futures
 import datetime
+import webbrowser
 
 """ FOR AUTH"""
 
@@ -27,7 +28,7 @@ big_accounts_file = "big_accounts.txt"
 """ CONSTANTS """
 
 # Account name
-account_name = "YOUR_ACCOUNT_NAME"
+account_name = "YOUR_USERNAME"
 
 # Threshold to verify if an account has the right ammount of followers
 # to be classified as "Big Account"
@@ -36,9 +37,6 @@ threshold_followers = 5000
 # Since date until some date (in this case 30 days)
 today = datetime.date.today()
 lastMonth = today - datetime.timedelta(days=30)
-
-today = today.strftime("%Y-%m-%d")
-lastMonth = lastMonth.strftime("%Y-%m-%d")
 
 
 
@@ -82,13 +80,31 @@ def get_mention_ids(api):
 
 	# Get ids where the account had been mentioned (range of 1 month)
 	mention_ids = []
-	for mentions in Cursor(api.mentions_timeline,since=lastMonth, until=today).items():
-		mention_ids.append( mentions.user.id )
+	for mentions in Cursor(api.mentions_timeline).pages():
+		for mention in mentions:
+			mention_ids.append( mention.user.id )
 
 	# Get my last tweets and get the user ids from replies (range of 1 month)
-	for tweet in Cursor(api.user_timeline, since=lastMonth, until=today).items():
-		if tweet.in_reply_to_user_id != api.me().id or tweet.in_reply_to_user_id != None:
-			mention_ids.append(tweet.in_reply_to_user_id)
+	isBreak = False
+
+	for tweets in Cursor(api.user_timeline).pages():
+		
+		# Only break if we already got all the tweets of the last month
+		if isBreak:
+			break
+
+		for tweet in tweets:
+			if tweet.in_reply_to_user_id != api.me().id or tweet.in_reply_to_user_id != None:
+				
+				tweet_date = datetime.datetime.strptime(str(tweet.created_at), "%Y-%m-%d %H:%M:%S").date()
+
+				# break if we already got all the tweets of the last month
+				if lastMonth > tweet_date:
+					isBreak = True
+					break
+
+				else:
+					mention_ids.append(tweet.in_reply_to_user_id)
 
 	return mention_ids
 
@@ -99,6 +115,8 @@ def following_mention_ids(api, ids):
 
 		returns the ids list only with the ones that the account follow
 	"""
+
+	ids = list(set(ids))
 
 	following_mention_ids = []
 	for idt in ids:
@@ -157,8 +175,22 @@ def main():
 	""" Auth """
 	try:
 		auth = OAuthHandler(consumer_key, consumer_secret)
-		auth.secure = True
-		auth.set_access_token(access_token, access_token_secret)
+		
+		try:
+			redirect_url = auth.get_authorization_url()
+			webbrowser.open(redirect_url)
+		except:
+			print("Error getting request token")
+
+		verifier = input("Code:")
+
+		try:
+			auth.get_access_token(verifier)
+		except:
+			print("Error getting access token")
+
+		#auth.secure = True
+		auth.set_access_token(auth.access_token, auth.access_token_secret)
 		api = API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
 
 	except BaseException as e:
@@ -166,7 +198,7 @@ def main():
 		sys.exit(1)
 
 
-	""" I/O different ids"""
+	""" I/O different ids """
 
 	# All friends/following ID's
 	if os.path.exists(friends_file):
